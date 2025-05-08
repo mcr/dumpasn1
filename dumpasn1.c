@@ -296,6 +296,7 @@ static int reverseBitString = FALSE;/* Natural order on OS390 is the same as ASN
 static int rawTimeString = FALSE;	/* Print raw time strings */
 static int shallowIndent = FALSE;	/* Perform shallow indenting */
 static int outputWidth = 80;		/* 80-column display */
+static int stringWrapWidth = 40;        /* how many characters in IA5String width */
 static int maxNestLevel = MAX_NESTING_LEVEL;/* Maximum nesting level for which to display output */
 static int doOutlineOnly = FALSE;	/* Only display constructed-object outline */
 
@@ -1959,7 +1960,7 @@ static void displayString( FILE *inFile, long length, int level,
 	{
 	char timeStr[ 64 ];
 	long noBytes = length;
-	int lineLength = 48, i;
+	int lineLength = stringWrapWidth+8, i;
 	int firstTime = TRUE, doTimeStr = FALSE, warnIA5 = FALSE;
 	int warnPrintable = FALSE, warnTime = FALSE, warnBMP = FALSE;
 	int warnTimeT = FALSE, warnTimeCrazy = FALSE, warnTimeCrazyAlt = FALSE;
@@ -1974,7 +1975,7 @@ static void displayString( FILE *inFile, long length, int level,
 		else
 			doTimeStr = rawTimeString ? FALSE : TRUE;
 		}
-	if( !doTimeStr && length <= 40 )
+	if( !doTimeStr && length <= stringWrapWidth )
 		printString( level, "%s", " '" );	/* Print string on same line */
 	level = adjustLevel( level, ( doPure ) ? 15 : 8 );
 	for( i = 0; i < noBytes; i++ )
@@ -1983,7 +1984,7 @@ static void displayString( FILE *inFile, long length, int level,
 
 		/* If the string is longer than 40 chars, break it up into multiple
 		   sections */
-		if( length > 40 && !( i % lineLength ) )
+		if( length > stringWrapWidth && !( i % lineLength ) )
 			{
 			if( !firstTime )
 				printString( level, "%c", '\'' );
@@ -3372,6 +3373,7 @@ static void usageExit( void )
 	puts( "       -f<file> = Dump object at offset -<number> to file (allows data to be" );
 	puts( "            extracted from encapsulating objects)" );
 	puts( "       -w<number> = Set width of output, default = 80 columns" );
+	puts( "       -b<number> = Set width of string output, default = 40 columns" );
 	puts( "" );
 
 	puts( "  Display options:" );
@@ -3564,6 +3566,17 @@ int main( int argc, char *argv[] )
 				case 'V':
 					printAllData = doDumpHeader = TRUE;
 					extraOIDinfo = dumpText = TRUE;
+					break;
+
+                                case 'B':
+                                        stringWrapWidth = atoi( argPtr + 1 );
+					if( stringWrapWidth < 20 || stringWrapWidth > 500 )
+						{
+						puts( "Invalid output width." );
+						exit( EXIT_FAILURE );
+						}
+					while( argPtr[ 1 ] )
+						argPtr++;	/* Skip rest of arg */
 					break;
 
 				case 'W':
